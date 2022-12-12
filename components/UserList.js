@@ -8,7 +8,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-export default function App() {
+export default function UserList() {
   return (
     <NavigationContainer>
       <Tab.Navigator
@@ -103,7 +103,7 @@ function UserInfoScreen({ route }) {
 function InfoScreen() {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Vaya lío de ejercicio!</Text>
+      <Text>Vaya lio de ejercicio!</Text>
     </View>
   );
 }
