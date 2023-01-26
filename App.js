@@ -1,14 +1,23 @@
 import React, { useEffect, useState, } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, FlatList, 
-        Image,ScrollView, RefreshControl, Wait, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, 
+          StyleSheet,FlatList, 
+          Image, TextInput, NativeModules } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+//para importar las imagenes
+import Fresa from "./src/assets/strawberry.png";
+import Manzana from "./src/assets/manzana.png";
+import Melocoton from "./src/assets/melocoton.png";
+import Naranja from "./src/assets/naranja.png";
+import Pera from "./src/assets/pera.png";
+import Piña from "./src/assets/piña.png";
+import Platano from "./src/assets/platano.png";
+import Uvas from "./src/assets/uvas.png";
+import Kiwi from "./src/assets/kiwi.png";
 
+const Tab = createBottomTabNavigator();
 
 export default function ApiFruits() {
   return (
@@ -29,7 +38,7 @@ export default function ApiFruits() {
             // You can return any component that you like here!
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: 'skyblue',
+          tabBarActiveTintColor: 'rgb(6, 125, 172)',
           tabBarInactiveTintColor: 'grey',
         })}
       >
@@ -41,34 +50,35 @@ export default function ApiFruits() {
 }
 
 function ListadoSCreen() {
-  const onRefresh = React.useCallback(() => { setRefreshing(true); wait(2000).then(() => setRefreshing(false), setOpen(false), loadKeychains()); }, []);
-  const [refreshing, setRefreshing] = useState(false);
-
   const [fruits, setFruits] = useState(null);
 
-  useEffect(() => {
+  function fetchdata() {
     fetch("http://10.0.2.2:8080/fruits")
-      .then(response => response.json())
-      .then((responseJson) => {
-        console.log("geting data from fetch", responseJson);
-        setFruits(responseJson);
-      })
-      .catch(error => console.log(error));
-  },
-    [])
+    .then(response => response.json())
+    .then((responseJson) => {
+      console.log("geting data from fetch", responseJson);
+      setFruits(responseJson);
+    })
+    .catch(error => console.log(error));
+  }
+  useEffect( fetchdata,[])
 
   const printElement = ({ item }) => {
     return (
       <View style = {{display: "flex", flexDirection: "row"}}>
         <View style={style.fruits}>
           
-          {item.nombre === "Kiwi" ? null: <Image
-            style={{ width: 30, height: 30, }}
-            source={require("./src/assets/strawberry.png")}/>}
-
-          <Text style = {{lineHeight: 35}} >{item.id} </Text>
-          <Text style = {{lineHeight: 35}} >{item.name} </Text>
-          <Text style = {{lineHeight: 35}} >{item.price}€</Text>
+          <Image
+            style={{ width: 30, height: 30, marginTop: 5 }}
+            source={item.name === "Fresa" ? Fresa : item.name === "Kiwi" ? Kiwi : 
+                    item.name === "Pera" ? Pera : item.name === "Platano" ? Platano : 
+                    item.name === "Melocoton" ? Melocoton : item.name === "Uvas" ? Uvas : 
+                    item.name === "Naranja" ? Naranja : item.name === "Piña" ? Piña : 
+                    item.name === "Manzana" ? Manzana : null}/> 
+                                {/* usar Manzana de ejemplo para "subir fruta" */}
+          <Text style = {{lineHeight: 35, width: 20}} >{item.id} </Text>
+          <Text style = {{lineHeight: 35, width: 55}} >{item.name} </Text>
+          <Text style = {{lineHeight: 35, width: 35}} >{item.price}€</Text>
         </View>
         <View>
           <TouchableOpacity onPress={() => borrarFruta(item.id)}>
@@ -76,28 +86,51 @@ function ListadoSCreen() {
           </TouchableOpacity>
         </View>
       </View>
-
     )
   }
 
+  async function  borrarFruta(id) {
+    await fetch("http://10.0.2.2:8080/fruits/" + id, { method: "DELETE"})
+    fetchdata()
+  }
+  
   return (
     <FlatList
       data={fruits}
       renderItem={printElement}
       keyExtractor={item => item.id}
     />
+    
   )
 }
 
-function borrarFruta(id) {
-  fetch("http://10.0.2.2:8080/fruits/" + id, { method: "DELETE"})
-  console.log(id)
 
-}
 
 function SubirScreen() {
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
+  const [mesage, setMesage] = useState("");
+
+  function subirFruta(nombre, precio) {
+    let data = {
+      method: 'POST',
+      body: JSON.stringify({
+        name: nombre,
+        price: precio
+      }),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }
+    setMesage("Fruta subida con exito");
+    setNombre("");
+    setPrecio("");
+
+    return fetch("http://10.0.2.2:8080/fruits", data)
+      .then(response => response.json())  // promise
+      .catch(error => console.log(error))  
+  }
 
   return (
     <View>
@@ -106,8 +139,7 @@ function SubirScreen() {
         <TextInput
           style={style.input}
           value={nombre}
-          onChangeText={setNombre}
-        />
+          onChangeText={setNombre}/>
       </View>
       <View style={style.viewInput}>
         <Text style={{ margin: 30, width: 60 }}>Precio:</Text>
@@ -115,35 +147,18 @@ function SubirScreen() {
           style={style.input}
           value={precio}
           onChangeText={setPrecio}
-          keyboardType='numeric' />
+          keyboardType='numeric'/>
       </View>
       <View style={style.viewButton}>
-        <TouchableOpacity onPress={() => subirFruta(nombre, precio)}>
+        <TouchableOpacity onPress={() => nombre ==="" || precio ===""? setMesage("Debe rellenar los campos") : subirFruta(nombre, precio)}>
           <Text style={style.button}>Guardar fruta</Text>
+          <Text>{mesage}</Text>
         </TouchableOpacity>
       </View>
     </View>
 
   )
 }
-
-function subirFruta(nombre, precio) {
-  let data = {
-    method: 'POST',
-    body: JSON.stringify({
-      name: nombre,
-      price: precio
-    }),
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
-  }
-  return fetch("http://10.0.2.2:8080/fruits", data)
-    .then(response => response.json())  // promise
-    .catch(error => console.log(error));
-}
-
 
 
 //--------- STYLES ---------------------
@@ -161,7 +176,7 @@ const style = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     justifyContent: "space-around",
-    backgroundColor: 'skyblue',
+
   },
   button: {
     fontWeight: 'bold',
@@ -184,7 +199,7 @@ const style = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     textAlign: 'center',
-    backgroundColor: 'orange',
+    backgroundColor: 'skyblue',
     color: "black"
   },
 
